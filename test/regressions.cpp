@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "function2-test.hpp"
@@ -260,4 +261,44 @@ TYPED_TEST(AllReferenceRetConstructTests, reference_returns_not_buildable) {
   typename TestFixture::template left_t<ref_obj&()> left(&ref_obj_getter);
   ref_obj& ref = left();
   ASSERT_EQ(ref.data(), 8373827);
+}
+
+/// Functor which counts the number of times it has been copied or moved
+class CopyAndMoveCountFunctor {
+  int copy_count = 0;
+  int move_count = 0;
+
+public:
+  CopyAndMoveCountFunctor() = default;
+
+  CopyAndMoveCountFunctor(const CopyAndMoveCountFunctor& that) {
+    *this = that;
+  }
+
+  CopyAndMoveCountFunctor& operator=(const CopyAndMoveCountFunctor& that) {
+    copy_count = that.copy_count + 1;
+    move_count = that.move_count;
+    return *this;
+  }
+
+  CopyAndMoveCountFunctor(CopyAndMoveCountFunctor&& that) {
+    *this = std::move(that);
+  }
+
+  CopyAndMoveCountFunctor& operator=(CopyAndMoveCountFunctor&& that) {
+    copy_count = that.copy_count;
+    move_count = that.move_count + 1;
+    return *this;
+  }
+
+  ~CopyAndMoveCountFunctor() = default;
+
+  std::pair<int, int> operator()() const {
+    return std::make_pair(copy_count, move_count);
+  }
+};
+
+TEST(regression_tests, no_extra_move_during_construction) {
+  fu2::function<std::pair<int, int>()> f(CopyAndMoveCountFunctor{});
+  ASSERT_EQ(f(), std::make_pair(0, 2));
 }
