@@ -376,7 +376,11 @@ struct box : private Allocator {
 
   T value_;
 
-  explicit box(T value, Allocator allocator_)
+  explicit box(const T& value, Allocator allocator_)
+      : Allocator(std::move(allocator_)), value_(value) {
+  }
+
+  explicit box(T&& value, Allocator allocator_)
       : Allocator(std::move(allocator_)), value_(std::move(value)) {
   }
 
@@ -392,7 +396,11 @@ struct box<false, T, Allocator> : private Allocator {
 
   T value_;
 
-  explicit box(T value, Allocator allocator_)
+  explicit box(const T& value, Allocator allocator_)
+      : Allocator(std::move(allocator_)), value_(std::move(value)) {
+  }
+
+  explicit box(T&& value, Allocator allocator_)
       : Allocator(std::move(allocator_)), value_(std::move(value)) {
   }
 
